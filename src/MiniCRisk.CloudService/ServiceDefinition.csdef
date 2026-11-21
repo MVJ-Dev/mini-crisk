@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Azure Cloud Services (extended support) service definition - REFERENCE ONLY.
+  This is what "Cloud Services" is: a role definition (VM size, endpoints, certificates, startup tasks, settings).
+  On AWS there is no equivalent file: each element below becomes an explicit resource
+  (EC2 instance type / launch template, ALB listener, ACM or Secrets Manager certificate, user data, config source).
+  Cloud Services (extended support) retires on 31 March 2027.
+-->
+<ServiceDefinition name="MiniCRisk.CloudService"
+                   xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceDefinition"
+                   schemaVersion="2015-04.2.6">
+  <WebRole name="MiniCRisk.Web" vmsize="Standard_D2_v2">
+    <Sites>
+      <Site name="Web">
+        <Bindings>
+          <Binding name="Endpoint1" endpointName="Endpoint1" />
+          <Binding name="HttpsIn" endpointName="HttpsIn" />
+        </Bindings>
+      </Site>
+    </Sites>
+    <Endpoints>
+      <InputEndpoint name="Endpoint1" protocol="http" port="80" />
+      <InputEndpoint name="HttpsIn" protocol="https" port="443" certificate="SiteTls" />
+    </Endpoints>
+    <Certificates>
+      <!-- Vault auth certificate: used by ADAL to authenticate against Key Vault -->
+      <Certificate name="VaultAuth" storeLocation="LocalMachine" storeName="My" />
+      <!-- Partner signing certificate: private key used by the app to sign partner API requests -->
+      <Certificate name="PartnerSigning" storeLocation="LocalMachine" storeName="My" />
+      <Certificate name="SiteTls" storeLocation="LocalMachine" storeName="My" />
+    </Certificates>
+    <ConfigurationSettings>
+      <Setting name="Vault_Uri" />
+      <Setting name="Vault_ClientId" />
+      <Setting name="Vault_CertThumbprint" />
+      <Setting name="Partner_CertThumbprint" />
+      <Setting name="Storage_DocumentsContainer" />
+      <Setting name="Storage_QueueName" />
+      <Setting name="Reference_ShareName" />
+      <Setting name="Scoring_Endpoint" />
+      <Setting name="Worker_Enabled" />
+    </ConfigurationSettings>
+    <LocalResources>
+      <LocalStorage name="Scratch" sizeInMB="1024" cleanOnRoleRecycle="true" />
+    </LocalResources>
+    <Startup>
+      <!-- Installs the R runtime and the Plumber scoring service (see startup.cmd / startup.ps1) -->
+      <Task commandLine="startup.cmd" executionContext="elevated" taskType="simple" />
+    </Startup>
+  </WebRole>
+</ServiceDefinition>

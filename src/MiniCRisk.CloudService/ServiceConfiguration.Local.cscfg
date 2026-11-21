@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Local (Azure compute emulator) configuration. All values are placeholders. -->
+<ServiceConfiguration serviceName="MiniCRisk.CloudService"
+                      xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration"
+                      osFamily="6" osVersion="*" schemaVersion="2015-04.2.6">
+  <Role name="MiniCRisk.Web">
+    <Instances count="1" />
+    <ConfigurationSettings>
+      <Setting name="Vault_Uri" value="https://minicrisk-dev-kv.vault.azure.net/" />
+      <Setting name="Vault_ClientId" value="00000000-0000-0000-0000-000000000000" />
+      <Setting name="Vault_CertThumbprint" value="0000000000000000000000000000000000000001" />
+      <Setting name="Partner_CertThumbprint" value="0000000000000000000000000000000000000002" />
+      <Setting name="Storage_DocumentsContainer" value="documents" />
+      <Setting name="Storage_QueueName" value="jobs" />
+      <Setting name="Reference_ShareName" value="reference-data" />
+      <Setting name="Scoring_Endpoint" value="http://localhost:8000/score" />
+      <Setting name="Worker_Enabled" value="true" />
+    </ConfigurationSettings>
+    <Certificates>
+      <Certificate name="VaultAuth" thumbprint="0000000000000000000000000000000000000001" thumbprintAlgorithm="sha1" />
+      <Certificate name="PartnerSigning" thumbprint="0000000000000000000000000000000000000002" thumbprintAlgorithm="sha1" />
+      <Certificate name="SiteTls" thumbprint="0000000000000000000000000000000000000003" thumbprintAlgorithm="sha1" />
+    </Certificates>
+  </Role>
+</ServiceConfiguration>

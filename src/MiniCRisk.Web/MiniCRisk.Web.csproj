@@ -1,0 +1,84 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    MiniCRisk.Web - ASP.NET Web API 2 on .NET Framework 4.6.1 (same runtime family as the real workload).
+
+    NOTE: SDK-style csproj is used so the project restores/builds with MSBuild + PackageReference
+    (CodeBuild Windows image, Visual Studio, or `dotnet build` with the reference assemblies package).
+    The build output is staged in <repo>/artifacts/site (bin\ + Web.config + Global.asax): that folder is what IIS serves.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>MiniCRisk.Web</AssemblyName>
+    <RootNamespace>MiniCRisk.Web</RootNamespace>
+    <OutputPath>bin\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <SiteStageDir>$(MSBuildThisFileDirectory)..\..\artifacts\site\</SiteStageDir>
+
+    <!--
+      The Azure Cloud Services SDK assembly (Microsoft.WindowsAzure.ServiceRuntime) is NOT on NuGet.
+      WebRole.cs only compiles when the Azure SDK is installed (adjust AzureSdkDir if needed).
+      Without the SDK the project still builds; WebRole.cs is simply excluded by #if.
+    -->
+    <AzureSdkDir Condition="'$(AzureSdkDir)' == ''">C:\Program Files\Microsoft SDKs\Azure\.NET SDK\v2.9\bin\runtimes\base\</AzureSdkDir>
+    <DefineConstants Condition="Exists('$(AzureSdkDir)Microsoft.WindowsAzure.ServiceRuntime.dll')">$(DefineConstants);AZURE_CLOUD_SERVICE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Web" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Runtime.Caching" />
+    <Reference Include="Microsoft.WindowsAzure.ServiceRuntime"
+               Condition="Exists('$(AzureSdkDir)Microsoft.WindowsAzure.ServiceRuntime.dll')">
+      <HintPath>$(AzureSdkDir)Microsoft.WindowsAzure.ServiceRuntime.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Web framework -->
+    <PackageReference Include="Microsoft.AspNet.WebApi.WebHost" Version="5.2.9" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+
+    <!-- Azure dependencies (what the migration replaces) -->
+    <PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
+    <PackageReference Include="Microsoft.Azure.KeyVault" Version="3.0.5" />
+    <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="5.2.9" />
+    <PackageReference Include="Microsoft.WindowsAzure.ConfigurationManager" Version="3.2.3" />
+
+    <!-- Data -->
+    <PackageReference Include="MySql.Data" Version="8.0.33" />
+
+    <!-- AWS SDK already referenced (migration "partly started", as in the real project) -->
+    <PackageReference Include="AWSSDK.S3" Version="3.7.*" />
+
+    <!-- Lets the project build without the 4.6.1 targeting pack (e.g. Linux CI, newer VS) -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Global.asax" />
+    <Content Include="Web.config" />
+    <None Include="Web.Development.config" DependentUpon="Web.config" />
+    <None Include="Web.Staging.config" DependentUpon="Web.config" />
+    <None Include="Web.Release.config" DependentUpon="Web.config" />
+  </ItemGroup>
+
+  <!-- Stage a ready-to-serve IIS site folder: artifacts\site\{Web.config, Global.asax, bin\*} -->
+  <Target Name="StageSite" AfterTargets="Build">
+    <ItemGroup>
+      <SiteRootFile Include="$(MSBuildProjectDirectory)\Web.config;$(MSBuildProjectDirectory)\Global.asax" />
+      <SiteBinFile Include="$(MSBuildProjectDirectory)\$(OutputPath)**\*" />
+    </ItemGroup>
+    <MakeDir Directories="$(SiteStageDir)bin" />
+    <Copy SourceFiles="@(SiteRootFile)" DestinationFolder="$(SiteStageDir)" />
+    <Copy SourceFiles="@(SiteBinFile)"
+          DestinationFiles="@(SiteBinFile->'$(SiteStageDir)bin\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Message Importance="high" Text="Site staged at $(SiteStageDir)" />
+  </Target>
+
+</Project>

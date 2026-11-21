@@ -1,0 +1,29 @@
+# Build output
+bin/
+obj/
+artifacts/
+packages/
+.vs/
+*.user
+*.suo
+
+# Secrets and local config - NEVER commit these
+*.pfx
+*.pem
+*.key
+*.cer
+.env
+local.settings.json
+*.publishsettings
+terraform.tfstate*
+.terraform/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
